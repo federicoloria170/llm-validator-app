@@ -1,73 +1,93 @@
-# 🤖 LLM Validator App
+🤖 LLM Validator AppValidatore e Filtro Intelligente per Output di LLMUn'infrastruttura containerizzata con Docker in cui Python agisce da "cervello e setaccio", analizzando, pulendo e strutturando le risposte dei modelli linguistici prima che arrivino all'utente o ai sistemi aziendali.🏗️ Architettura Generale (Infrastruttura Docker)L'intero progetto gira all'interno di un ambiente Docker Compose. Ogni elemento è isolato nel proprio container per garantire sicurezza, modularità e facilità di avvio.       [ 🌐 UTENTE / CLIENT ]
+                 │
+                 │ HTTP (Porta 3000)
+                 ▼
+ ┌─────────────────────────────────────────────────────────────┐
+ │ 🐳 AMBIENTE DOCKER (Docker Network)                         │
+ │                                                             │
+ │   ┌─────────────────────────────────────────────────────┐   │
+ │   │ 🎨 Container Frontend (UI)                          │   │
+ │   │ Porta interna: 3000                                 │   │
+ │   └──────────────────────────┬──────────────────────────┘   │
+ │                              │ API Request                  │
+ │                              ▼                              │
+ │   ┌─────────────────────────────────────────────────────┐   │
+ │   │ 🐍 Container Backend (Python Core Engine)           │   │
+ │   │ Porta interna: 8000                                 │   │
+ │   │                                                     │   │
+ │   │  • Riceve il prompt                                 │   │
+ │   │  • Chiama l'LLM                                     │   │
+ │   │  • FILTRA E VALIDA I DATI (Filtro Python)          │   │
+ │   └──────────────────────────┬──────────────────────────┘   │
+ │                              │                              │
+ └──────────────────────────────┼──────────────────────────────┘
+                                │ API Call
+                                ▼
+                      [ 🤖 Modello LLM / API ]
+🔌 Mappa delle Porte e dei ServiziServizio DockerContainerPorta Host (Tua Macchina)Porta Interna DockerDescrizioneFrontendllm-ui30003000Interfaccia utente visivaBackend (Python)llm-api80008000Motore di calcolo e filtro datiDatabase (opz.)llm-db54325432Storico log e validazioni🐍 Il Ruolo di Python: "Il Setaccio dei Dati"I modelli linguistici (LLM) spesso restituiscono testo vuoto, formattazioni errate, dati sensibili o informazioni inventate (allucinazioni).Python non si limita a passare il testo, ma lo trasforma e lo valida attraverso 4 fasi chiave:   [ Output Grezzo dell'LLM ]
+             │
+             ▼
+┌───────────────────────────┐
+│  1. SANITIZZAZIONE        │ 🧼 Rimuove caratteri speciali, tag vietati e dati sensibili
+└────────────┬──────────────┘
+             ▼
+┌───────────────────────────┐
+│  2. VALIDAZIONE SCHEMA    │ 📐 Verifica che la risposta segua la struttura richiesta (JSON, tipi di dati)
+└────────────┬──────────────┘
+             ▼
+┌───────────────────────────┐
+│  3. FILTRAGGIO REGOLARE   │ ✂️ Elimina allucinazioni, testo ridondante o risposte fuori target
+└────────────┬──────────────┘
+             ▼
+┌───────────────────────────┐
+│  4. ASSEGNAZIONE SCORE    │ 📊 Calcola un punteggio di affidabilità della risposta
+└────────────┬──────────────┘
+             ▼
+   [ Output Pulito e Valido ]
+Concetti chiave della logica Python:Input Grezzo: Riceve il testo puro generated dall'LLM.Parsing & Structure: Forza la risposta dentro un formato strutturato e sicuro per l'applicazione.Controllo Criteri: Scarta le risposte che non superano i test di qualità/sicurezza impostati.Output Finale: Invia al Frontend solo i dati certificati e pronti all'uso.🔄 Flusso Completo di FunzionamentoEcco come viaggia la richiesta dall'inizio alla fine:[Utente] ──1. Invia Prompt──► [Frontend (Porta 3000)]
+                                    │
+                                2. Passa richiesta
+                                    ▼
+                             [Backend Python (Porta 8000)]
+                                    │
+                                3. Chiama API
+                                    ▼
+                             [Modello LLM External/Local]
+                                    │
+                                4. Ritorna testo grezzo
+                                    ▼
+                             [Backend Python (Porta 8000)]
+                                    │
+                         ┌──────────┴──────────┐
+                         │ 🔍 FILTRAGGIO DATI  │
+                         └──────────┬──────────┘
+                                    │
+                                5. Dati validati
+                                    ▼
+                             [Frontend (Porta 3000)] ──6. Mostra Risultato──► [Utente]
+🚀 Come Avviare il Progetto con DockerGrazie alla containerizzazione, non devi installare dipendenze Python o Node.js sulla tua macchina locale.1. Clona il repositorygit clone https://github.com/federicoloria170/llm-validator-app.git
+cd llm-validator-app
+2. Configura le variabili d'ambienteCrea un file .env inserendo le tue chiavi API:cp .env.example .env
+3. Avvia tutti i servizi con un solo comandodocker-compose up --build
+L'applicazione sarà subito raggiungibile su:Frontend / UI: http://localhost:3000Backend API Docs: http://localhost:8000/docs
 
-> Un'applicazione intelligente progettata per validare, testare e analizzare l'output e le performance di modelli linguistici di grandi dimensioni (LLM).
 
----
 
-## 📋 Indice
-- [Panoramica del Progetto](#-panoramica-del-progetto)
-- [Architettura e Interazione tra gli Elementi](#-architettura-e-interazione-tra-gli-elementi)
-- [Porte di Rete e Configurazione](#-porte-di-rete-e-configurazione)
-- [Diagramma di Flusso](#-diagramma-di-flusso)
-- [Guida all'Installazione e Avvio](#-guida-allinstallazione-e-avvio)
 
----
 
-## 🔍 Panoramica del Progetto
 
-**llm-validator-app** permette agli sviluppatori di inviare prompt, validare le risposte generate dagli LLM tramite regole personalizzate, metriche di qualità o controlli di sicurezza, e visualizzare i risultati tramite un'interfaccia intuitiva.
 
----
 
-## ⚙️ Architettura e Interazione tra gli Elementi
 
-L'applicazione è composta principalmente da tre macro-componenti che interagiscono tra loro:
 
-1. **Frontend (Interfaccia Utente):**
-   - Espone le schermate di login, la dashboard di inserimento prompt e la visualizzazione dei report di validazione.
-   - Comunica tramite richieste HTTP/REST o WebSocket con il backend.
 
-2. **Backend (Core / Engine di Validazione):**
-   - Gestisce la logica di business, riceve le richieste dal frontend, formatta i prompt e si interfaccia con le API dei vari LLM (es. OpenAI, Anthropic, o modelli locali).
-   - Esegue i moduli di validazione (controllo sintattico, aderenza al contesto, filtri di sicurezza).
 
-3. **Database / Storage (Opzionale):**
-   - Archivia lo storico dei test, i prompt inviati e le metriche di validazione per analisi future.
 
-> 💡 *Esempio visivo dell'interazione:*
-> ![Schema interazione elementi](assets/architecture-diagram.png) *(Inserisci qui l'immagine del flusso architetturale)*
 
----
 
-## 🚪 Porte di Rete e Configurazione
 
-Di seguito sono elencate le porte predefinite utilizzate dai servizi dell'applicazione durante lo sviluppo locale:
 
-| Servizio | Porta Predefinita | Descrizione |
-| :--- | :--- | :--- |
-| **Frontend** | `3000` o `8500` | Interfaccia grafica (es. React / Next.js / Streamlit) |
-| **Backend API** | `5000` o `8000` | Server di business logic (es. Flask / FastAPI) |
-| **Database** | `5432` o `27017` | Eventuale DB locale (PostgreSQL / MongoDB) |
 
-*Nota: Puoi verificare o modificare le porte all'interno del file `.env` o nei file di configurazione Docker se presenti.*
-
----
-
-## 🖼️ Come Funziona (Galleria Illustrativa)
-
-### 1. Dashboard Principale
-L'utente inserisce il testo o il prompt di test e seleziona i criteri di validazione desiderati.
-> ![Dashboard Principale](assets/screenshot-dashboard.png)
-
-### 2. Risultati e Validazione
-Il sistema interroga l'LLM e mostra in tempo reale l'esito della validazione (es. metriche di successo, errori riscontrati, latenza).
-> ![Schermata Validazione](assets/screenshot-validation.png)
-
----
-
-## 🚀 Guida Rapida all'Avvio
-
-1. **Clona il repository:**
-   ```bash
-   git clone [https://github.com/federicoloria170/llm-validator-app.git](https://github.com/federicoloria170/llm-validator-app.git)
-   cd llm-validator-app
+                                
+                                    ▼
+                             [Frontend (Porta 3000)] ──6. Mostra Risultato──► [Utente]
